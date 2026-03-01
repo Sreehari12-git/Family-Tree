@@ -474,8 +474,7 @@
 // }
 
 // export default App;
-
-
+import {getRelationship} from "./utils/relationship";
 import { useState, useEffect } from "react";
 import { v4 as uuid } from "uuid";
 import ReactFlow, {
@@ -536,6 +535,8 @@ function App() {
   }, [nodes]);
 
   const [selectedId, setSelectedId] = useState(null);
+  const [selectedIds, setSelectedIds] = useState([]);
+const [relationText, setRelationText] = useState("");
   const [name, setName] = useState("");
   const [editingNode, setEditingNode] = useState(null);
 
@@ -635,6 +636,27 @@ function App() {
     setNodes({});
     setSelectedId(null);
   };
+
+  function computeLevels(nodes) {
+  const levels = {};
+  Object.keys(nodes).forEach(id => { levels[id] = 0; });
+
+  let dirty = true;
+  while (dirty) {
+    dirty = false;
+    Object.values(nodes).forEach(p => {
+      p.parents.forEach(pid => {
+        const req = (levels[pid] ?? 0) + 1;
+        if ((levels[p.id] ?? 0) < req) {
+          levels[p.id] = req;
+          dirty = true;
+        }
+      });
+    });
+  }
+
+  return levels;
+}
 
   // ─── LAYOUT ─────────────────────────────────────────────────────────────────
   const computeLayout = () => {
@@ -950,6 +972,11 @@ function App() {
       {selectedId && nodes[selectedId] && (
         <div style={{ marginBottom: 8, fontSize: 13, color: "#666" }}>
           Selected: <strong>{nodes[selectedId].name}</strong>
+          {relationText && (
+  <div style={{ marginBottom: 10, fontSize: 14, color: "#2c3e50" }}>
+    <strong>Relationship:</strong> {relationText}
+  </div>
+)}
         </div>
       )}
 
@@ -958,8 +985,25 @@ function App() {
           nodes={flowNodes}
           edges={flowEdges}
           edgeTypes={edgeTypes}
-          onNodeClick={(_, node) => setSelectedId(node.id)}
-          fitView
+onNodeClick={(_, node) => {
+  setSelectedIds(prev => {
+    const updated = [...prev, node.id].slice(-2); // keep only last 2
+
+    if (updated.length === 2) {
+      const relation = getRelationship(
+        updated[0],
+        updated[1],
+        nodes,
+        computeLevels(nodes) // we’ll add this next
+      );
+      setRelationText(relation);
+    }
+
+    return updated;
+  });
+
+  setSelectedId(node.id); // keep your highlight logic working
+}}          fitView
           fitViewOptions={{ padding: 0.3 }}
         >
           <Background color="#f5f0e8" gap={20} />
