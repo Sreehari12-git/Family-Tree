@@ -66,6 +66,93 @@ if (b.partner && nodes[b.partner]) {
   }
 }
 
+// -------------------------------------------------
+// PARENT-IN-LAW CHECK (BEFORE BFS)
+// -------------------------------------------------
+
+// A is parent of B's partner
+if (b.partner && nodes[b.partner]) {
+  const partnerOfB = nodes[b.partner];
+
+  if (partnerOfB.parents?.includes(a.id)) {
+    const parentInLaw = genderWord(a, "father-in-law", "mother-in-law");
+    const childInLaw = genderWord(b, "son-in-law", "daughter-in-law");
+
+    return `${a.name} (${parentInLaw}) <-> ${b.name} (${childInLaw})`;
+  }
+}
+
+// B is parent of A's partner
+if (a.partner && nodes[a.partner]) {
+  const partnerOfA = nodes[a.partner];
+
+  if (partnerOfA.parents?.includes(b.id)) {
+    const parentInLaw = genderWord(b, "father-in-law", "mother-in-law");
+    const childInLaw = genderWord(a, "son-in-law", "daughter-in-law");
+
+    return `${b.name} (${parentInLaw}) <-> ${a.name} (${childInLaw})`;
+  }
+}
+
+// -------------------------------------------------
+// NEW: Partners of brothers (Sister-in-law ↔ Sister-in-law)
+// If A and B are both partners of two brothers
+// -------------------------------------------------
+
+// -------------------------------------------------
+// Partners of brothers (Sister-in-law ↔ Sister-in-law)
+// -------------------------------------------------
+
+// if (a.partner && b.partner) {
+
+//   const partnerOfA = nodes[a.partner];
+//   const partnerOfB = nodes[b.partner];
+
+//   if (partnerOfA && partnerOfB) {
+
+//     const arePartnersBrothers =
+//       partnerOfA.gender === "male" &&
+//       partnerOfB.gender === "male" &&
+//       partnerOfA.parents?.some(p =>
+//         partnerOfB.parents?.includes(p)
+//       );
+
+//     if (arePartnersBrothers) {
+//       return `${a.name} (sister-in-law) <-> ${b.name} (sister-in-law)`;
+//     }
+//   } 
+// }
+
+// -------------------------------------------------
+// If partners of A and B are siblings
+// -------------------------------------------------
+
+if (a.partner && b.partner) {
+
+  const partnerOfA = nodes[a.partner];
+  const partnerOfB = nodes[b.partner];
+
+  if (
+    partnerOfA &&
+    partnerOfB &&
+    areSiblings(partnerOfA, partnerOfB)
+  ) {
+
+    const relationA =
+      a.gender === "male"
+        ? "brother-in-law"
+        : "sister-in-law";
+
+    const relationB =
+      b.gender === "male"
+        ? "brother-in-law"
+        : "sister-in-law";
+
+    return `${a.name} (${relationA}) <-> ${b.name} (${relationB})`;
+  }
+}
+
+
   // -------------------------------------------------
   // Build Graph
   // -------------------------------------------------
@@ -281,33 +368,33 @@ if (aParents.length) {
 }
 
   // -------------------------------------------------
-// 1️⃣5️⃣ IN-LAW CHECK
-// A is parent of B's partner OR vice versa
-// -------------------------------------------------
+// // 1️⃣5️⃣ IN-LAW CHECK
+// // A is parent of B's partner OR vice versa
+// // -------------------------------------------------
 
-// Case 1: A is parent of B's partner
-if (b.partner && nodes[b.partner]) {
-  const partnerOfB = nodes[b.partner];
+// // Case 1: A is parent of B's partner
+// if (b.partner && nodes[b.partner]) {
+//   const partnerOfB = nodes[b.partner];
 
-  if (partnerOfB.parents?.includes(a.id)) {
-    const parentInLaw = genderWord(a, "father-in-law", "mother-in-law");
-    const childInLaw = genderWord(b, "son-in-law", "daughter-in-law");
+//   if (partnerOfB.parents?.includes(a.id)) {
+//     const parentInLaw = genderWord(a, "father-in-law", "mother-in-law");
+//     const childInLaw = genderWord(b, "son-in-law", "daughter-in-law");
 
-    return `${a.name} (${parentInLaw}) <-> ${b.name} (${childInLaw})`;
-  }
-}
+//     return `${a.name} (${parentInLaw}) <-> ${b.name} (${childInLaw})`;
+//   }
+// }
 
-// Case 2: B is parent of A's partner
-if (a.partner && nodes[a.partner]) {
-  const partnerOfA = nodes[a.partner];
+// // Case 2: B is parent of A's partner
+// if (a.partner && nodes[a.partner]) {
+//   const partnerOfA = nodes[a.partner];
 
-  if (partnerOfA.parents?.includes(b.id)) {
-    const parentInLaw = genderWord(b, "father-in-law", "mother-in-law");
-    const childInLaw = genderWord(a, "son-in-law", "daughter-in-law");
+//   if (partnerOfA.parents?.includes(b.id)) {
+//     const parentInLaw = genderWord(b, "father-in-law", "mother-in-law");
+//     const childInLaw = genderWord(a, "son-in-law", "daughter-in-law");
 
-    return `${b.name} (${parentInLaw}) <-> ${a.name} (${childInLaw})`;
-  }
-}
+//     return `${b.name} (${parentInLaw}) <-> ${a.name} (${childInLaw})`;
+//   }
+// }
 
   // -------------------------------------------------
   // 6️⃣ COUSINS
