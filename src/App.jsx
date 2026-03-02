@@ -579,22 +579,66 @@ const [relationText, setRelationText] = useState("");
   };
 
   const addPartner = () => {
-    if (!selectedId) return;
-    setNodes(prev => {
-      const sel = prev[selectedId];
-      if (sel.partner) { alert("Partner already exists"); return prev; }
-      const partnerId = uuid();
-      const updated = {
-        ...prev,
-        [partnerId]: { id: partnerId, name: "Partner", gender: "", birthDate: "", parents: [], children: [...sel.children], siblings: [], partner: selectedId },
-        [selectedId]: { ...sel, partner: partnerId }
+  if (!selectedId) return;
+
+  setNodes(prev => {
+    const sel = prev[selectedId];
+
+    if (sel.partner) {
+      alert("Partner already exists");
+      return prev;
+    }
+
+    // 🚨 Prevent partner if gender not set
+    if (!sel.gender) {
+      alert("Please set gender before adding a partner.");
+      return prev;
+    }
+
+    const partnerId = uuid();
+
+    // Auto-assign opposite gender
+    const partnerGender =
+      sel.gender === "male"
+        ? "female"
+        : sel.gender === "female"
+        ? "male"
+        : "";
+
+    // 🚨 If gender is "other", block
+    if (!partnerGender) {
+      alert("Same gender or unspecified gender partners are not allowed.");
+      return prev;
+    }
+
+    const updated = {
+      ...prev,
+      [partnerId]: {
+        id: partnerId,
+        name: "Partner",
+        gender: partnerGender, // automatically opposite
+        birthDate: "",
+        parents: [],
+        children: [...sel.children],
+        siblings: [],
+        partner: selectedId
+      },
+      [selectedId]: {
+        ...sel,
+        partner: partnerId
+      }
+    };
+
+    sel.children.forEach(cid => {
+      updated[cid] = {
+        ...prev[cid],
+        parents: [...prev[cid].parents, partnerId]
       };
-      sel.children.forEach(cid => {
-        updated[cid] = { ...prev[cid], parents: [...prev[cid].parents, partnerId] };
-      });
-      return updated;
     });
-  };
+
+    return updated;
+  });
+};
 
   const addSibling = () => {
     if (!selectedId) return;
@@ -796,12 +840,19 @@ const [relationText, setRelationText] = useState("");
     });
 
     // 4. Flow nodes
-    const flowNodes = Object.values(nodes).map(person => {
-      const gender = person.gender;
-      const borderColor = selectedId === person.id ? "#c0392b"
-        : gender === "male" ? "#2980b9"
-        : gender === "female" ? "#8e44ad"
-        : "#c05621";
+    // 4. Flow nodes
+const flowNodes = Object.values(nodes).map(person => {
+  const gender = person.gender;
+
+  const isSelected = selectedIds.includes(person.id);
+
+  const borderColor = isSelected
+    ? "#c0392b"
+    : gender === "male"
+    ? "#2980b9"
+    : gender === "female"
+    ? "#8e44ad"
+    : "#c05621";
       return {
         id: person.id,
         data: {
@@ -817,14 +868,14 @@ const [relationText, setRelationText] = useState("");
           y: (levels[person.id] ?? 0) * ROW_H
         },
         style: {
-          border: `2px solid ${borderColor}`,
-          borderWidth: selectedId === person.id ? 3 : 2,
-          padding: "8px 12px",
-          borderRadius: 8,
-          background: selectedId === person.id ? "#fff5f5" : "white",
-          width: NODE_W,
-          fontSize: 13,
-        }
+  border: `2px solid ${borderColor}`,
+  borderWidth: isSelected ? 3 : 2,
+  padding: "8px 12px",
+  borderRadius: 8,
+  background: isSelected ? "#fff5f5" : "white",
+  width: NODE_W,
+  fontSize: 13,
+}
       };
     });
 
@@ -1045,9 +1096,33 @@ onNodeClick={(_, node) => {
           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
             <button style={btnStyle(false, false)} onClick={() => setEditingNode(null)}>Cancel</button>
             <button style={btnStyle(false, false)} onClick={() => {
-              setNodes(prev => ({ ...prev, [editingNode.id]: editingNode }));
-              setEditingNode(null);
-            }}>💾 Save</button>
+  setNodes(prev => {
+    const person = editingNode;
+    const partnerId = person.partner;
+
+    // 🚨 If person has a partner, validate genders
+    if (partnerId && prev[partnerId]) {
+      const partner = prev[partnerId];
+
+      if (
+        person.gender &&
+        partner.gender &&
+        person.gender === partner.gender
+      ) {
+        alert("Same gender partners are not allowed.");
+        return prev; // 🚫 block save
+      }
+    }
+
+    // ✅ Otherwise allow save
+    return {
+      ...prev,
+      [person.id]: person
+    };
+  });
+
+  setEditingNode(null);
+}}>💾 Save</button>
           </div>
         </div>
       )}
