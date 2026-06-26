@@ -145,7 +145,6 @@ export function getRelationship(id1, id2, nodes) {
   return "No relation found";
 }
 
-
 function interpretPath(path, nodes) {
   const length = path.length - 1;
   const a = nodes[path[0]];
